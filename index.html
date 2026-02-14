@@ -9,79 +9,142 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap');
-        body { font-family: 'Cairo', sans-serif; background: #0f172a; }
-        .neon-border { box-shadow: 0 0 20px rgba(56, 189, 248, 0.2); }
-        input[type="range"] { -webkit-appearance: none; background: #1e293b; border-radius: 10px; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: #22d3ee; border-radius: 50%; cursor: pointer; box-shadow: 0 0 10px #22d3ee; }
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@600;900&display=swap');
+        
+        body { font-family: 'Cairo', sans-serif; background: #020617; overflow-x: hidden; }
+
+        /* شريط الألوان المتحرك اللانهائي */
+        .rainbow-bar {
+            height: 4px;
+            width: 100%;
+            background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff, #ff0000);
+            background-size: 200% 100%;
+            animation: moveBar 3s linear infinite;
+        }
+
+        @keyframes moveBar {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        .neo-box {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .neo-box:hover {
+            border-color: #22d3ee;
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.1);
+            transform: translateY(-2px);
+        }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
-    <div id="root" class="w-full max-w-md"></div>
+<body class="min-h-screen">
+    <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
 
+        // رابط السيرفر الخاص بك
         const SERVER_URL = "https://158e4726-c90f-4be8-b3aa-6bed2b55b805-00-188ey3m9mpgr0.picard.replit.dev/";
         const socket = io(SERVER_URL);
 
         const RemotePanel = () => {
-            const [log, setLog] = useState("جاري الاتصال...");
-            const [brightness, setBrightness] = useState(150);
+            const [status, setStatus] = useState("جاري فحص الاتصال...");
+            const [brightness, setBrightness] = useState(128);
 
             useEffect(() => {
-                socket.on("connect", () => setLog("متصل بالسيرفر ✅"));
-                socket.on("connect_error", () => setLog("عطل في الاتصال ❌"));
+                socket.on("connect", () => setStatus("النظام متصل ونشط ✅"));
+                socket.on("connect_error", () => setStatus("فشل الاتصال بالسيرفر ❌"));
             }, []);
 
-            const triggerRemote = (action, val) => {
-                socket.emit("send_command", { action: action, value: val });
-                setLog(`إرسال: ${action} (${val || 'بدون قيمة'})`);
-            };
-
-            const handleBrightness = (e) => {
-                const val = e.target.value;
-                setBrightness(val);
-                triggerRemote('set_brightness', val);
+            const send = (action, value = "") => {
+                socket.emit("send_command", { action, value });
             };
 
             return (
-                <div className="bg-slate-900 border-2 border-cyan-500/30 p-6 rounded-[2.5rem] shadow-2xl text-white text-center neon-border">
-                    <h1 className="text-2xl font-black mb-1 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                        التحكم المتقدم ⚡
-                    </h1>
-                    
-                    <div className="bg-black/40 p-2 rounded-lg mb-6 border border-slate-800">
-                        <p className="text-cyan-400 text-[10px] font-mono">{log}</p>
-                    </div>
+                <div className="flex flex-col items-center">
+                    {/* شريط الألوان المتحرك */}
+                    <div className="rainbow-bar fixed top-0 left-0 z-50"></div>
 
-                    {/* قسم السطوع */}
-                    <div className="mb-6 bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
-                        <label className="block text-xs font-bold mb-3 text-cyan-300">مستوى السطوع: {brightness}</label>
-                        <input type="range" min="0" max="255" value={brightness} onChange={handleBrightness} className="w-full h-2 uppercase cursor-pointer" />
-                    </div>
+                    <div className="w-full max-w-lg mt-12 p-6">
+                        {/* الهيدر والكريديت */}
+                        <div className="text-center mb-10">
+                            <span className="text-cyan-400 text-3xl font-black mb-2 block tracking-tighter uppercase">
+                                &lt;/&gt;
+                            </span>
+                            <h2 className="text-white text-lg font-extrabold uppercase tracking-widest mb-1">
+                                Developed by: **OMAR ABD EL-TAWAB SALEH**
+                            </h2>
+                            <div className="h-1 w-20 bg-cyan-500 mx-auto rounded-full mb-4"></div>
+                            <p className="text-slate-400 text-xs font-mono bg-slate-800/50 py-1 px-3 rounded-full inline-block">
+                                {status}
+                            </p>
+                        </div>
 
-                    <div className="grid grid-cols-1 gap-3">
-                        <button onClick={() => triggerRemote('vibrate', '500')} 
-                            className="bg-slate-800 border border-cyan-500/50 p-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-cyan-900/30 transition-all shadow-lg active:scale-95">
-                            📳 هز الجهاز
-                        </button>
-                        
-                        {/* زر فتح تطبيق (مثال: يوتيوب) */}
-                        <button onClick={() => triggerRemote('openApp', 'com.google.android.youtube')} 
-                            className="bg-gradient-to-r from-cyan-600 to-blue-600 p-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-all">
-                            🚀 فتح تطبيق اليوتيوب
-                        </button>
+                        <div className="grid grid-cols-1 gap-4">
+                            
+                            {/* بوكس السطوع */}
+                            <div className="neo-box p-5 rounded-3xl">
+                                <label className="flex justify-between text-cyan-400 text-sm font-bold mb-4">
+                                    <span>التحكم في الإضاءة</span>
+                                    <span>{Math.round((brightness/255)*100)}%</span>
+                                </label>
+                                <input 
+                                    type="range" min="0" max="255" value={brightness} 
+                                    onChange={(e) => {
+                                        setBrightness(e.target.value);
+                                        send('set_brightness', e.target.value);
+                                    }}
+                                    className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                                />
+                            </div>
 
-                        <button onClick={() => triggerRemote('toast', 'تم استلام الأمر!')} 
-                            className="bg-slate-800 border border-slate-700 p-3 rounded-2xl font-bold text-sm active:scale-95">
-                            💬 إشعار سريع
-                        </button>
+                            {/* بوكس القفل (الأدمن) */}
+                            <div className="neo-box p-4 rounded-3xl flex items-center justify-between">
+                                <div className="text-right">
+                                    <h3 className="text-white font-bold">حماية النظام</h3>
+                                    <p className="text-slate-500 text-[10px]">قفل الشاشة فوراً عبر Device Admin</p>
+                                </div>
+                                <button onClick={() => send('lock_phone')} className="bg-red-500/10 hover:bg-red-500 border border-red-500/50 text-red-500 hover:text-white p-4 rounded-2xl transition-all font-black shadow-lg shadow-red-500/20">
+                                    🔒 LOCK
+                                </button>
+                            </div>
 
-                        <button onClick={() => triggerRemote('exitApp', '')} 
-                            className="text-red-400 text-xs font-bold mt-2 hover:underline">
-                            إغلاق التطبيق فورا ⛔
-                        </button>
+                            {/* بوكس الاهتزاز */}
+                            <div className="neo-box p-4 rounded-3xl flex items-center justify-between">
+                                <div className="text-right">
+                                    <h3 className="text-white font-bold">تنبيه الجهاز</h3>
+                                    <p className="text-slate-500 text-[10px]">تشغيل وضع الهزاز القوي</p>
+                                </div>
+                                <button onClick={() => send('vibrate', '1000')} className="bg-cyan-500/10 hover:bg-cyan-500 border border-cyan-500/50 text-cyan-400 hover:text-white p-4 rounded-2xl transition-all font-black">
+                                    📳 VIBRATE
+                                </button>
+                            </div>
+
+                            {/* بوكس فتح اليوتيوب */}
+                            <div className="neo-box p-4 rounded-3xl flex items-center justify-between">
+                                <div className="text-right">
+                                    <h3 className="text-white font-bold">الوسائط</h3>
+                                    <p className="text-slate-500 text-[10px]">فتح تطبيق YouTube تلقائياً</p>
+                                </div>
+                                <button onClick={() => send('openApp', 'com.google.android.youtube')} className="bg-blue-500/10 hover:bg-blue-500 border border-blue-500/50 text-blue-400 hover:text-white p-4 rounded-2xl transition-all font-black px-8">
+                                    📺 OPEN
+                                </button>
+                            </div>
+
+                            {/* بوكس الإغلاق */}
+                            <button onClick={() => send('exitApp')} className="mt-4 text-slate-600 hover:text-red-400 text-xs font-bold transition-colors">
+                                تدمير الجلسة وإغلاق التطبيق ⛔
+                            </button>
+
+                        </div>
+
+                        <footer className="mt-12 text-center">
+                            <p className="text-[10px] text-slate-700 font-mono tracking-widest">ENCRYPTED SOCKET BRIDGE v2.0</p>
+                        </footer>
                     </div>
                 </div>
             );
