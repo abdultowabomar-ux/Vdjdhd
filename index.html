@@ -7,6 +7,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@900&display=swap');
         body { font-family: 'Cairo', sans-serif; background: #0f172a; }
@@ -17,50 +18,56 @@
     <div id="root" class="w-full max-w-md"></div>
 
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect } = React;
+
+        // وضع رابط ريبلت الخاص بك هنا
+        const SERVER_URL = "https://158e4726-c90f-4be8-b3aa-6bed2b55b805-00-188ey3m9mpgr0.picard.replit.dev/";
+        const socket = io(SERVER_URL);
 
         const RemotePanel = () => {
-            const [log, setLog] = useState("متصل بالسيرفر الخارجي 🌐");
+            const [log, setLog] = useState("جاري الاتصال بالسيرفر...");
 
-            const triggerAndroid = (action, val) => {
-                if (window.AndroidInterface) {
-                    window.AndroidInterface.runAction(action, val);
-                    setLog(`تم تنفيذ أمر: ${action}`);
-                } else {
-                    setLog("خطأ: أنت تتصفح من متصفح عادي وليس من التطبيق!");
-                }
+            useEffect(() => {
+                socket.on("connect", () => setLog("متصل بالسيرفر وجاهز للإرسال ✅"));
+                socket.on("connect_error", () => setLog("خطأ في الاتصال بالسيرفر ❌"));
+            }, []);
+
+            const triggerRemote = (action, val) => {
+                // إرسال الأمر للسيرفر (Replit) بدلاً من محاولة مناداة الأندرويد مباشرة
+                socket.emit("send_command", { action: action, value: val });
+                setLog(`تم إرسال أمر [${action}] للسيرفر..`);
             };
 
             return (
-                <div class="bg-slate-900 border-2 border-cyan-500/30 p-8 rounded-[2.5rem] shadow-2xl text-white text-center neon-border">
-                    <h1 class="text-3xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                        تحكم سحابي
+                <div className="bg-slate-900 border-2 border-cyan-500/30 p-8 rounded-[2.5rem] shadow-2xl text-white text-center neon-border">
+                    <h1 className="text-3xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                        ريموت كنترول ⚡
                     </h1>
-                    <p class="text-slate-500 text-xs mb-6 font-bold uppercase tracking-widest">External Source Control</p>
+                    <p className="text-slate-500 text-xs mb-6 font-bold uppercase tracking-widest">Replit Socket Bridge</p>
                     
-                    <div class="bg-black/40 p-3 rounded-lg mb-6 border border-slate-800">
-                        <p class="text-cyan-400 text-[10px] font-mono">{log}</p>
+                    <div className="bg-black/40 p-3 rounded-lg mb-6 border border-slate-800">
+                        <p className="text-cyan-400 text-[10px] font-mono">{log}</p>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-4">
-                        <button onClick={() => triggerAndroid('vibrate', '500')} 
-                            class="bg-gradient-to-r from-cyan-600 to-cyan-700 p-4 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-lg">
-                            📳 هز الجهاز عن بعد
+                    <div className="grid grid-cols-1 gap-4">
+                        <button onClick={() => triggerRemote('vibrate', '500')} 
+                            className="bg-gradient-to-r from-cyan-600 to-cyan-700 p-4 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-lg">
+                            📳 هز الجهاز الآن
                         </button>
                         
-                        <button onClick={() => triggerAndroid('toast', 'أمر خارجي من GitHub!')} 
-                            class="bg-gradient-to-r from-blue-600 to-blue-700 p-4 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-lg">
-                            💬 إرسال إشعار (Toast)
+                        <button onClick={() => triggerRemote('toast', 'أمر من اللوحة!')} 
+                            className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-lg">
+                            💬 إرسال رسالة توست
                         </button>
 
-                        <button onClick={() => triggerAndroid('exitApp', '')} 
-                            class="bg-gradient-to-r from-slate-700 to-slate-800 p-4 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-lg">
-                            ⛔ إغلاق التطبيق فورا
+                        <button onClick={() => triggerRemote('exitApp', '')} 
+                            className="bg-gradient-to-r from-red-600 to-red-800 p-4 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-lg">
+                            ⛔ إغلاق التطبيق
                         </button>
                     </div>
                     
-                    <footer class="mt-8 text-[9px] text-slate-600 font-bold">
-                        POWERED BY REACT & ANDROID BRIDGE
+                    <footer className="mt-8 text-[9px] text-slate-600 font-bold tracking-widest">
+                        CONNECTED TO REPLIT DEV SERVER
                     </footer>
                 </div>
             );
