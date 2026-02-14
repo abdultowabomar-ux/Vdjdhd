@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@900&display=swap');
+        body { font-family: 'Cairo', sans-serif; background: #0f172a; }
+        .neon-border { box-shadow: 0 0 15px rgba(56, 189, 248, 0.5); }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div id="root" class="w-full max-w-md"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const RemotePanel = () => {
+            const [log, setLog] = useState("متصل بالسيرفر الخارجي 🌐");
+
+            const triggerAndroid = (action, val) => {
+                if (window.AndroidInterface) {
+                    window.AndroidInterface.runAction(action, val);
+                    setLog(`تم تنفيذ أمر: ${action}`);
+                } else {
+                    setLog("خطأ: أنت تتصفح من متصفح عادي وليس من التطبيق!");
+                }
+            };
+
+            return (
+                <div class="bg-slate-900 border-2 border-cyan-500/30 p-8 rounded-[2.5rem] shadow-2xl text-white text-center neon-border">
+                    <h1 class="text-3xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                        تحكم سحابي
+                    </h1>
+                    <p class="text-slate-500 text-xs mb-6 font-bold uppercase tracking-widest">External Source Control</p>
+                    
+                    <div class="bg-black/40 p-3 rounded-lg mb-6 border border-slate-800">
+                        <p class="text-cyan-400 text-[10px] font-mono">{log}</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4">
+                        <button onClick={() => triggerAndroid('vibrate', '500')} 
+                            class="bg-gradient-to-r from-cyan-600 to-cyan-700 p-4 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-lg">
+                            📳 هز الجهاز عن بعد
+                        </button>
+                        
+                        <button onClick={() => triggerAndroid('toast', 'أمر خارجي من GitHub!')} 
+                            class="bg-gradient-to-r from-blue-600 to-blue-700 p-4 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-lg">
+                            💬 إرسال إشعار (Toast)
+                        </button>
+
+                        <button onClick={() => triggerAndroid('exitApp', '')} 
+                            class="bg-gradient-to-r from-slate-700 to-slate-800 p-4 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-lg">
+                            ⛔ إغلاق التطبيق فورا
+                        </button>
+                    </div>
+                    
+                    <footer class="mt-8 text-[9px] text-slate-600 font-bold">
+                        POWERED BY REACT & ANDROID BRIDGE
+                    </footer>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<RemotePanel />);
+    </script>
+</body>
+</html>
